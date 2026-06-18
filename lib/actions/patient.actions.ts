@@ -60,48 +60,135 @@ export const registerPatient = async ({
   ...patient
 }: RegisterUserParams) => {
   try {
-    // Upload file ->  // https://appwrite.io/docs/references/cloud/client-web/storage#createFile
     let file;
+
+    console.log("identificationDocument exists:", !!identificationDocument);
+
     if (identificationDocument) {
-      const inputFile =
-        identificationDocument &&
-        InputFile.fromBlob(
-          identificationDocument?.get("blobFile") as Blob,
-          identificationDocument?.get("fileName") as string
+      console.log(
+        "blobFile:",
+        identificationDocument.get("blobFile")
+      );
+
+      console.log(
+        "fileName:",
+        identificationDocument.get("fileName")
+      );
+
+      const inputFile = InputFile.fromBlob(
+        identificationDocument.get("blobFile") as Blob,
+        identificationDocument.get("fileName") as string
+      );
+
+      console.log("InputFile created");
+
+      try {
+        file = await storage.createFile(
+          BUCKET_ID!,
+          ID.unique(),
+          inputFile
         );
 
-      file = await storage.createFile(BUCKET_ID!, ID.unique(), inputFile);
+        console.log("FILE UPLOADED SUCCESSFULLY");
+        console.log("FILE ID:", file.$id);
+
+        console.log(
+          "FILE URL:",
+          `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view?project=${PROJECT_ID}`
+        );
+      } catch (error) {
+        console.error("FILE UPLOAD FAILED");
+        console.error(error);
+        throw error;
+      }
     }
 
-    // Create new patient document -> https://appwrite.io/docs/references/cloud/server-nodejs/databases#createDocument
+    const patientData = {
+      name: patient.name,
+      email: patient.email,
+      phone: patient.phone,
+      userId: patient.userId,
+      privacyConsent: "true",
+      birthDate: patient.birthDate,
+      gender: patient.gender,
+      address: patient.address,
+      occupation: patient.occupation,
+      emergencyContactName: patient.emergencyContactName,
+      emergencyContactNumber: patient.emergencyContactNumber,
+      primaryPhysician: patient.primaryPhysician,
+      insuranceProvider: patient.insuranceProvider,
+      insurancePolicyNumber: patient.insurancePolicyNumber,
+      allergies: patient.allergies,
+      currentMedication: patient.currentMedication,
+      familyMedicalHistory: patient.familyMedicalHistory,
+      pastMedicalHistory: patient.pastMedicalHistory,
+      identificationType: patient.identificationType,
+      identificationNumber: patient.identificationNumber,
+      identificationDocumentId: "",
+      identificationDocumentUrl: ""
+    };
+
+    console.log("DATABASE_ID:", DATABASE_ID);
+    console.log("PATIENT_COLLECTION_ID:", PATIENT_COLLECTION_ID);
+
+    console.log(
+      "PATIENT DATA:",
+      JSON.stringify(patientData, null, 2)
+    );
+
+    console.log("Attempting to create patient...");
+
+    const collections = await databases.listCollections(DATABASE_ID!);
+
+    const patientCollection = collections.collections.find(
+      (c) => c.$id === "patient"
+    );
+
+    console.log(
+      "PATIENT ATTRIBUTES:",
+      patientCollection?.attributes?.map((a: any) => ({
+        key: a.key,
+        status: a.status,
+        type: a.type,
+      }))
+    );
+
     const newPatient = await databases.createDocument(
       DATABASE_ID!,
       PATIENT_COLLECTION_ID!,
       ID.unique(),
-      {
-        identificationDocumentId: file?.$id ? file.$id : null,
-        identificationDocumentUrl: file?.$id
-          ? `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
-          : null,
-        ...patient,
-      }
+      patientData
     );
 
+    console.log("PATIENT CREATED:", newPatient.$id);
+
     return parseStringify(newPatient);
-  } catch (error) {
-    console.error("An error occurred while creating a new patient:", error);
+  } catch (error: any) {
+    console.error("CREATE PATIENT FAILED");
+    console.error("Message:", error?.message);
+    console.error("Code:", error?.code);
+    console.error("Type:", error?.type);
+    console.error("Response:", error?.response);
+    console.dir(error, { depth: null });
+
+    throw error;
   }
 };
 
 // GET PATIENT
 export const getPatient = async (userId: string) => {
   try {
+    console.log("DATABASE_ID:", DATABASE_ID);
+    console.log("PATIENT_COLLECTION_ID:", PATIENT_COLLECTION_ID);
     const patients = await databases.listDocuments(
       DATABASE_ID!,
       PATIENT_COLLECTION_ID!,
       [Query.equal("userId", [userId])]
     );
-
+    if (!patients.documents.length) {
+      console.log("No patient found for user:", userId);
+      return null;
+    }
     return parseStringify(patients.documents[0]);
   } catch (error) {
     console.error(
