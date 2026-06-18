@@ -1,12 +1,14 @@
 "use client";
-
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { Button } from "@/components/ui/button";
 import { Form, FormControl } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -22,11 +24,8 @@ import { PatientFormValidation } from "@/lib/validation";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "react-phone-number-input/style.css";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import CustomFormField, { FormFieldType } from "../CustomFormField";
-import { FileUploader } from "../FileUploader";
 import SubmitButton from "../SubmitButton";
 
 const RegisterForm = ({ user }: { user: User }) => {
@@ -347,7 +346,9 @@ const RegisterForm = ({ user }: { user: User }) => {
             placeholder="123456789"
           />
 
-          {/*<CustomFormField
+          {/* 
+           Temporarily commented out due to issues with file upload. Will be re-enabled once the issue is resolved.
+          <CustomFormField
             fieldType={FormFieldType.SKELETON}
             control={form.control}
             name="identificationDocument"
@@ -357,7 +358,7 @@ const RegisterForm = ({ user }: { user: User }) => {
                 <FileUploader files={field.value} onChange={field.onChange} />
               </FormControl>
             )}
-          />Temporarily commented out due to issues with file upload. Will be re-enabled once the issue is resolved.
+          />
           */}
         </section>
 
