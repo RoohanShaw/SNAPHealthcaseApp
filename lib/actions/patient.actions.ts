@@ -17,8 +17,18 @@ import { parseStringify } from "../utils";
 // CREATE APPWRITE USER
 export const createUser = async (user: CreateUserParams) => {
   try {
-    // Create new user -> https://appwrite.io/docs/references/1.5.x/server-nodejs/users#create
-    const newuser = await users.create(
+    const existingUsers = await users.list();
+
+    const existingUser = existingUsers.users.find(
+      (u) => u.email === user.email || u.phone === user.phone
+    );
+
+    if (existingUser) {
+      console.log("Existing user found:", existingUser.$id);
+      return parseStringify(existingUser);
+    }
+
+    const newUser = await users.create(
       ID.unique(),
       user.email,
       user.phone,
@@ -26,17 +36,12 @@ export const createUser = async (user: CreateUserParams) => {
       user.name
     );
 
-    return parseStringify(newuser);
-  } catch (error: any) {
-    // Check existing user
-    if (error && error?.code === 409) {
-      const existingUser = await users.list([
-        Query.equal("email", [user.email]),
-      ]);
+    console.log("User created:", newUser.$id);
 
-      return existingUser.users[0];
-    }
-    console.error("An error occurred while creating a new user:", error);
+    return parseStringify(newUser);
+  } catch (error) {
+    console.error("CREATE USER ERROR:", error);
+    throw error;
   }
 };
 
@@ -180,15 +185,22 @@ export const getPatient = async (userId: string) => {
   try {
     console.log("DATABASE_ID:", DATABASE_ID);
     console.log("PATIENT_COLLECTION_ID:", PATIENT_COLLECTION_ID);
+    console.log("SEARCHING USER:", userId);
+
     const patients = await databases.listDocuments(
       DATABASE_ID!,
       PATIENT_COLLECTION_ID!,
       [Query.equal("userId", [userId])]
     );
+
+    console.log("PATIENT COUNT:", patients.total);
+    console.log("PATIENT DOCUMENTS:", patients.documents);
+
     if (!patients.documents.length) {
       console.log("No patient found for user:", userId);
       return null;
     }
+
     return parseStringify(patients.documents[0]);
   } catch (error) {
     console.error(

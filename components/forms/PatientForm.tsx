@@ -37,13 +37,21 @@ export const PatientForm = () => {
         phone: values.phone,
       };
 
+      console.log("CREATING USER");
+
       const newUser = await createUser(user);
 
+      console.log("CREATE USER RESPONSE:", newUser);
+
       if (newUser) {
+        console.log("REDIRECTING TO:", `/patients/${newUser.$id}/register`);
+
         router.push(`/patients/${newUser.$id}/register`);
+      } else {
+        console.log("NEW USER IS NULL");
       }
     } catch (error) {
-      console.log(error);
+      console.error("PATIENT FORM ERROR:", error);
     }
 
     setIsLoading(false);
